@@ -1,8 +1,11 @@
-import humanize
 from os import listdir, stat
 from os.path import join, exists, isdir
+
+import humanize
+import xmltodict
+
+from core_basic import get_dir_size, set_non_null
 from core_model import FoldersInfo, MachineInfo, GameInfo
-from core_basic import get_dir_size
 
 
 def get_bc_userdata_root(host='batocera'):
@@ -14,6 +17,37 @@ def get_folders_of_bc(bc_url):
     bios_dir = join(bc_url, "bios")
     roms_dir = join(bc_url, "roms")
     return FoldersInfo(bios_dir, roms_dir)
+
+
+def read_gamelist(dir_path, meta_list):
+    if len(meta_list) >= 1:
+        return meta_list
+    if not exists(dir_path):
+        print(f"The directory '{dir_path}' does not exist!")
+        return meta_list
+    info_path = join(dir_path, "gamelist.xml")
+    if not exists(info_path):
+        return meta_list
+    with open(info_path, 'r') as info_file:
+        doc = xmltodict.parse(info_file.read())
+        gla = doc["gameList"]["game"]
+        if not isinstance(gla, list):
+            gla = [gla]
+        for entry in gla:
+            entry_path = entry['path'].strip('./')
+            entry_file = join(dir_path, entry_path)
+            if not exists(entry_file):
+                continue
+            m_item = dict()
+            set_non_null(m_item, "id", entry.get("@id", None))
+            set_non_null(m_item, "md5", entry.get("md5", None))
+            set_non_null(m_item, "region", entry.get("region", None))
+            set_non_null(m_item, "developer", entry.get("developer", entry.get("publisher", None)))
+            set_non_null(m_item, "name", entry["name"])
+            set_non_null(m_item, "genre", entry.get("genre", "").split(' / '))
+            set_non_null(m_item, "lang", entry.get("lang", "").split(','))
+            meta_list[entry_path] = m_item
+    return meta_list
 
 
 def read_roms_infos(dir_path, mach_list):
@@ -43,6 +77,7 @@ def find_roms(dir_path, mach_list, rom_list):
     for machine in mach_list:
         mach_data = MachineInfo.from_dict(mach_list[machine])
         mach_path = join(dir_path, mach_data.id)
+        xml_data = read_gamelist(mach_path, dict())
         mach_txt = mach_data.label
         mach_shown = False
         for game in sorted(listdir(mach_path)):
@@ -70,7 +105,8 @@ def find_roms(dir_path, mach_list, rom_list):
                 g_id = game.replace('-', ' ').replace('_', ' ').replace(',', ' ').replace("'", ' ') \
                     .replace('(', '_').replace(')', '_').replace('.', ' ').replace('!', ' ') \
                     .replace('&', ' ').replace('[', ' ').replace(']', ' ').replace(' ', '').strip()
-                g_item = GameInfo(g_id.lower(), game_name, game_size, machine, game)
+                g_xml = xml_data.get(game, None)
+                g_item = GameInfo(g_id.lower(), game_name, game_size, machine, game, g_xml)
                 rom_mach[g_item.id] = g_item.to_dict()
     return rom_list
 

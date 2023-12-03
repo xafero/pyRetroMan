@@ -3,6 +3,18 @@ from os import getcwd, scandir
 from os.path import isfile, join
 
 
+def set_non_null(repo, key, value):
+    if value is None:
+        return
+    if isinstance(value, str):
+        value = value.strip()
+    if len(value) == 0:
+        return
+    if isinstance(value, list) and len(value) == 1 and len(value[0]) == 0:
+        return
+    repo[key] = value
+
+
 def get_current_dir(input_dir=None):
     if input_dir is None:
         input_dir = getcwd()

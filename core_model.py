@@ -23,3 +23,4 @@ class GameInfo(JSONWizard):
     size: int
     mach: str
     file: str
+    scraped: dict
