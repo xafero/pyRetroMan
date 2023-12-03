@@ -1,7 +1,8 @@
-from os import listdir
+import humanize
+from os import listdir, stat
 from os.path import join, exists, isdir
-
 from core_model import FoldersInfo, MachineInfo
+from core_basic import get_dir_size
 
 
 def get_bc_userdata_root(host='batocera'):
@@ -31,6 +32,36 @@ def read_roms_infos(dir_path, mach_list):
             item = MachineInfo(machine, info_mach, info_exts)
             mach_list[machine] = item.to_dict()
     return mach_list
+
+
+def find_roms(dir_path, mach_list, rom_list):
+    if len(rom_list) >= 1:
+        return rom_list
+    if not exists(dir_path):
+        print(f"The directory '{dir_path}' does not exist!")
+        return rom_list
+    for machine in mach_list:
+        mach_data = MachineInfo.from_dict(mach_list[machine])
+        mach_path = join(dir_path, mach_data.id)
+        mach_txt = mach_data.label
+        mach_shown = False
+        for game in sorted(listdir(mach_path)):
+            game_path = join(mach_path, game)
+            for ext in mach_data.exts:
+                if not game_path.endswith(ext):
+                    continue
+                if not mach_shown:
+                    print(f" * machine '{machine}' --> '{mach_txt}'")
+                    mach_shown = True
+                game_name = game.replace(ext, '').strip()
+                if isdir(game_path):
+                    game_size = get_dir_size(game_path)
+                else:
+                    game_stats = stat(game_path)
+                    game_size = game_stats.st_size
+                game_hsize = humanize.naturalsize(game_size)
+                print(f"    # game '{game_name}' is {game_hsize}")
+    return rom_list
 
 
 def read_bioses_readme(dir_path, bios_list):

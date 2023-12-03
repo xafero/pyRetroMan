@@ -1,5 +1,5 @@
 import json
-from os import getcwd
+from os import getcwd, scandir
 from os.path import isfile, join
 
 
@@ -25,3 +25,14 @@ def load_dict_if_exists(filename, func=None, input_dir=None):
     if func is not None:
         content = write_as_json(store_file, func(content))
     return content
+
+
+def get_dir_size(path):
+    total = 0
+    with scandir(path) as it:
+        for entry in it:
+            if entry.is_file():
+                total += entry.stat().st_size
+            elif entry.is_dir():
+                total += get_dir_size(entry.path)
+    return total

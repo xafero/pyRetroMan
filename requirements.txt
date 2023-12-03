@@ -1,1 +1,2 @@
 dataclass-wizard==0.22.2
+humanize==4.9.0
