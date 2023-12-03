@@ -14,3 +14,12 @@ class MachineInfo(JSONWizard):
     id: str
     label: str
     exts: list[str] = field(default_factory=list)
+
+
+@dataclass
+class GameInfo(JSONWizard):
+    id: str
+    label: str
+    size: int
+    mach: str
+    file: str

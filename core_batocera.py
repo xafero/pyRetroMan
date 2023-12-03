@@ -1,7 +1,7 @@
 import humanize
 from os import listdir, stat
 from os.path import join, exists, isdir
-from core_model import FoldersInfo, MachineInfo
+from core_model import FoldersInfo, MachineInfo, GameInfo
 from core_basic import get_dir_size
 
 
@@ -51,16 +51,27 @@ def find_roms(dir_path, mach_list, rom_list):
                 if not game_path.endswith(ext):
                     continue
                 if not mach_shown:
-                    print(f" * machine '{machine}' --> '{mach_txt}'")
+                    print(f' * machine [{machine}] {mach_txt}')
                     mach_shown = True
-                game_name = game.replace(ext, '').strip()
+                game_name_raw = game.replace(ext, '').strip()
+                game_name = game_name_raw.split(' (', maxsplit=1)[0].strip()
                 if isdir(game_path):
                     game_size = get_dir_size(game_path)
                 else:
                     game_stats = stat(game_path)
                     game_size = game_stats.st_size
                 game_hsize = humanize.naturalsize(game_size)
-                print(f"    # game '{game_name}' is {game_hsize}")
+                print(f'    # game "{game_name}" is {game_hsize}')
+                rom_mach = dict()
+                if machine in rom_list:
+                    rom_mach = rom_list[machine]
+                else:
+                    rom_list[machine] = rom_mach
+                g_id = game.replace('-', ' ').replace('_', ' ').replace(',', ' ').replace("'", ' ') \
+                    .replace('(', '_').replace(')', '_').replace('.', ' ').replace('!', ' ') \
+                    .replace('&', ' ').replace('[', ' ').replace(']', ' ').replace(' ', '').strip()
+                g_item = GameInfo(g_id.lower(), game_name, game_size, machine, game)
+                rom_mach[g_item.id] = g_item.to_dict()
     return rom_list
 
 
