@@ -1,6 +1,7 @@
-from os.path import join, exists
+from os import listdir
+from os.path import join, exists, isdir
 
-from core_model import FoldersInfo
+from core_model import FoldersInfo, MachineInfo
 
 
 def get_bc_userdata_root(host='batocera'):
@@ -14,6 +15,24 @@ def get_folders_of_bc(bc_url):
     return FoldersInfo(bios_dir, roms_dir)
 
 
+def read_roms_infos(dir_path, mach_list):
+    if len(mach_list) >= 1:
+        return mach_list
+    if not exists(dir_path):
+        print(f"The directory '{dir_path}' does not exist!")
+        return mach_list
+    for machine in sorted(listdir(dir_path)):
+        machine_path = join(dir_path, machine)
+        info_path = join(machine_path, "_info.txt")
+        with open(info_path, 'r') as info_file:
+            lines = info_file.readlines()
+            info_mach = lines[0].split("## SYSTEM ")[1].split('##')[0].rstrip()
+            info_exts = lines[2].split("accepted: ")[1].replace('"', ' ').strip().split(' ')
+            item = MachineInfo(machine, info_mach, info_exts)
+            mach_list[machine] = item.to_dict()
+    return mach_list
+
+
 def read_bioses_readme(dir_path, bios_list):
     if len(bios_list) >= 1:
         return bios_list
@@ -23,7 +42,7 @@ def read_bioses_readme(dir_path, bios_list):
     bios_meta = join(dir_path, "readme.txt")
     last_mach_name = ''
     bmark = 'bios/'
-    with open(bios_meta) as meta_file:
+    with open(bios_meta, 'r') as meta_file:
         for line in meta_file:
             if line.endswith(':' + '\n'):
                 mach_name = line.strip().rstrip(':')

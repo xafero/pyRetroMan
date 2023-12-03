@@ -1,1 +1,1 @@
-
+dataclass-wizard==0.22.2
